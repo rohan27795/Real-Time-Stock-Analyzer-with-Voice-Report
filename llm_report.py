@@ -47,13 +47,36 @@ def generate_swot_report(info, sentiment):
         "Content-Type": "application/json"
     }
 
-    response = requests.post(
-        "https://api.euron.one/api/v1/euri/alpha/chat/completions",
-        json=payload,
-        headers=headers
-    )
+    # Check for API key
+    if not EURI_API_KEY:
+        return "Error: EURI_API_KEY is not set in the environment. Please check your .env file."
 
-    return response.json()['choices'][0]['message']['content']
+    try:
+        response = requests.post(
+            "https://api.euron.one/api/v1/euri/alpha/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        response.raise_for_status()
+        response_data = response.json()
+
+        # Safely parse the response (OpenAI-compatible format)
+        if 'choices' in response_data and len(response_data['choices']) > 0:
+            return response_data['choices'][0]['message']['content']
+        
+        # Handle alternative formats or errors in JSON
+        elif 'error' in response_data:
+            error_msg = response_data.get('error', {}).get('message', 'Unknown API error')
+            return f"API Error: {error_msg}"
+        
+        else:
+            return "Error: Unexpected response format from LLM API."
+
+    except requests.exceptions.RequestException as e:
+        return f"Connection Error: Unable to reach SWOT API. {str(e)}"
+    except Exception as e:
+        return f"Unexpected Error: {str(e)}"
 
 # 🔹 Save SWOT to PDF safely (without encoding errors)
 def save_swot_pdf(swot_text: str, filename="swot_report.pdf"):

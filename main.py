@@ -55,8 +55,15 @@ if st.button("🚀 Run Full Analysis"):
     with st.spinner("⏳ Fetching data and running analysis..."):
         hist, info, sentiment = analyze_stock(ticker, period)
         swot = generate_swot_report(info, sentiment)
-        pdf_file = save_swot_pdf(swot)
-        audio_file = generate_voice_report(swot)
+        
+        # Check if SWOT generation returned an error message
+        if swot.startswith("Error") or swot.startswith("API Error") or swot.startswith("Connection Error"):
+            pdf_file = None
+            audio_file = None
+            st.error(f"❌ SWOT Analysis Failed: {swot}")
+        else:
+            pdf_file = save_swot_pdf(swot)
+            audio_file = generate_voice_report(swot)
 
     # -------------------------------
     # TABS Layout
@@ -93,13 +100,21 @@ if st.button("🚀 Run Full Analysis"):
     # --- Tab 3: SWOT Report
     with tab3:
         st.subheader("🧠 AI SWOT Analysis (EURI GPT-4.1 Nano)")
-        st.code(swot, language='markdown')
-        st.download_button("📥 Download SWOT PDF", data=open(pdf_file, "rb"), file_name=pdf_file)
+        if swot.startswith("Error") or swot.startswith("API Error") or swot.startswith("Connection Error"):
+            st.warning("⚠️ SWOT report could not be generated. Please check your API keys.")
+            st.info(f"Root Cause: {swot}")
+        else:
+            st.code(swot, language='markdown')
+            if pdf_file:
+                st.download_button("📥 Download SWOT PDF", data=open(pdf_file, "rb"), file_name=pdf_file)
 
     # --- Tab 4: Voice Report
     with tab4:
         st.subheader("🔊 Voice Report (Text-to-Speech)")
-        st.audio(audio_file)
+        if audio_file:
+            st.audio(audio_file)
+        else:
+            st.info("Voice report is unavailable because SWOT analysis failed.")
 
 else:
     st.markdown("👈 Choose a stock and run the analysis to see results.")

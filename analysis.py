@@ -66,8 +66,48 @@ def get_real_time_sentiment(ticker: str):
         "Authorization": f"Bearer {EURI_API_KEY}",
         "Content-Type": "application/json"
     }
-    response = requests.post("https://api.euron.one/api/v1/euri/alpha/chat/completions", headers=headers, json=payload)
-    return response.json()["choices"][0]["message"]["content"]
+    try:
+        response = requests.post("https://api.euron.one/api/v1/euri/alpha/chat/completions", headers=headers, json=payload)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        response_data = response.json()
+        
+        # Check if response has 'choices' key (OpenAI-compatible format)
+        if "choices" in response_data and len(response_data["choices"]) > 0:
+            return response_data["choices"][0]["message"]["content"]
+        
+        # Check for alternative response formats
+        elif "content" in response_data:
+            return response_data["content"]
+        
+        elif "text" in response_data:
+            return response_data["text"]
+        
+        # If error in response, handle it
+        elif "error" in response_data:
+            error_msg = response_data.get("error", {}).get("message", "Unknown API error")
+            print(f"API Error: {error_msg}")
+            return f"Error fetching sentiment: {error_msg}"
+        
+        # If structure is unexpected, print it for debugging
+        else:
+            print(f"Unexpected API response structure: {list(response_data.keys())}")
+            return f"Unable to parse sentiment response. Response keys: {list(response_data.keys())}"
+    
+    except requests.exceptions.RequestException as e:
+        print(f"Request error: {e}")
+        return f"Error connecting to sentiment API: {str(e)}"
+    except (KeyError, ValueError) as e:
+        print(f"Parsing error: {e}")
+        try:
+            if 'response' in locals() and response is not None:
+                response_data = response.json()
+                print(f"Response data: {response_data}")
+        except:
+            print("Could not parse response")
+        return "Error parsing sentiment response. Please check API configuration."
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return f"Error generating sentiment: {str(e)}"
 
 def analyze_stock(ticker: str, period="6mo"):
     hist, info = get_stock_data(ticker, period)
