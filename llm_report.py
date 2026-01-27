@@ -53,7 +53,7 @@ def generate_swot_report(info, sentiment):
 
     try:
         response = requests.post(
-            "https://api.euron.one/api/v1/euri/alpha/chat/completions",
+            "https://api.euron.one/api/v1/euri/chat/completions",
             json=payload,
             headers=headers,
             timeout=30

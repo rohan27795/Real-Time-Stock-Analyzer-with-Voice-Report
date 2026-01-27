@@ -67,7 +67,7 @@ def get_real_time_sentiment(ticker: str):
         "Content-Type": "application/json"
     }
     try:
-        response = requests.post("https://api.euron.one/api/v1/euri/alpha/chat/completions", headers=headers, json=payload)
+        response = requests.post("https://api.euron.one/api/v1/euri/chat/completions", headers=headers, json=payload)
         response.raise_for_status()  # Raise an exception for bad status codes
         response_data = response.json()
         
